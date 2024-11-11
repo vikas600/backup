@@ -1,0 +1,391 @@
+PL/SQL
+14. a) Consider table Stud(Roll, Att,Status)
+
+CREATE TABLE Stud (
+    Roll INT PRIMARY KEY,
+    Att DECIMAL(5, 2), 
+    Status CHAR(2)     -- Status as 'D' or 'ND'
+);
+
+INSERT INTO Stud (Roll, Att, Status) VALUES (101, 80, NULL);
+INSERT INTO Stud (Roll, Att, Status) VALUES (102, 60, NULL);
+INSERT INTO Stud (Roll, Att, Status) VALUES (103, 75, NULL);
+INSERT INTO Stud (Roll, Att, Status) VALUES (104, 85, NULL);
+INSERT INTO Stud (Roll, Att, Status) VALUES (105, 70, NULL);
+
+
+DELIMITER $$
+
+CREATE PROCEDURE Check_Attendance(ROLL_NUMBER INT)
+BEGIN
+    DECLARE v_att DECIMAL(5, 2);
+    DECLARE v_status CHAR(2);
+
+    -- Fetch attendance of the student
+    SELECT Att INTO v_att FROM Stud WHERE Roll = ROLL_NUMBER;
+
+    -- Check if attendance is less than 75%
+    IF v_att < 75 THEN
+        -- If attendance is less than 75%, display message and update status to 'D'
+        SELECT 'Term not granted' AS Message;
+        UPDATE Stud
+        SET Status = 'D'
+        WHERE Roll = ROLL_NUMBER;
+    ELSE
+        -- If attendance is 75% or more, display message and update status to 'ND'
+        SELECT 'Term granted' AS Message;
+        UPDATE Stud
+        SET Status = 'ND'
+        WHERE Roll = ROLL_NUMBER;
+    END IF;
+
+    COMMIT;
+END$$
+
+DELIMITER ;
+
+...................for caling the procedure and updating then table ..............
+
+CALL Check_Attendance(101);
+CALL Check_Attendance(102);
+CALL Check_Attendance(103);
+CALL Check_Attendance(104);
+CALL Check_Attendance(105);
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+b) Write a PL/SQL block for following requirement using user defined exception handling. The
+account_master table records the current balance for an account, which is updated whenever, any
+deposits or withdrawals takes place. If the withdrawal attempted is more than the current balance
+held in the account. The user defined exception is raised, displaying an appropriate message.
+Write a PL/SQL block for above requirement using user defined exception handling.
+
+
+
+CREATE TABLE account_master (
+    account_id int PRIMARY KEY,
+    balance decimal(10, 2) -- Balance amount with two decimal places
+);
+
+INSERT INTO account_master (account_id, balance) VALUES (1001, 5000.00);
+INSERT INTO account_master (account_id, balance) VALUES (1002, 1500.00);
+INSERT INTO account_master (account_id, balance) VALUES (1003, 3000.00);
+INSERT INTO account_master (account_id, balance) VALUES (1004, 7000.00);
+INSERT INTO account_master (account_id, balance) VALUES (1005, 10000.00);
+
+
+
+DELIMITER $$
+
+CREATE PROCEDURE Withdraw_Amount(
+    IN p_account_id INT,
+    IN p_withdrawal_amt DECIMAL(10, 2)
+)
+BEGIN
+    DECLARE v_current_balance DECIMAL(10, 2);
+    DECLARE exit handler FOR SQLEXCEPTION
+        BEGIN
+            ROLLBACK;
+            SELECT 'An error occurred. Transaction rolled back.' AS error_message;
+        END;
+
+    -- Check if account exists and fetch the current balance
+    SELECT balance INTO v_current_balance
+    FROM account_master
+    WHERE account_id = p_account_id;
+
+    -- Check if withdrawal amount exceeds the current balance
+    IF v_current_balance IS NULL THEN
+        SELECT 'Error: Account ID not found in account_master table.' AS error_message;
+    ELSEIF p_withdrawal_amt > v_current_balance THEN
+        SELECT 'Error: Insufficient balance. Withdrawal amount exceeds current balance.' AS error_message;
+    ELSE
+        -- Perform the withdrawal by deducting the amount from the balance
+        UPDATE account_master
+        SET balance = balance - p_withdrawal_amt
+        WHERE account_id = p_account_id;
+
+        -- Display success message
+        SELECT CONCAT('Withdrawal successful. Updated balance: ', (v_current_balance - p_withdrawal_amt)) AS success_message;
+    END IF;
+    
+    COMMIT;
+END$$
+
+DELIMITER ;
+
+..................Call function execution........................................................................
+
+CALL Withdraw_Amount(1001, 2000.00);
+CALL Withdraw_Amount(1002, 500.00);
+CALL Withdraw_Amount(1003, 4000.00);
+CALL Withdraw_Amount(9999, 100.00);
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+15.
+a) Write an SQL code block these raise a user defined exception where business rule is
+voilated. BR for client_ master table specifies when the value of bal_due field is less than 0
+handle the exception.
+
+
+
+CREATE TABLE client_master (
+    client_id INT PRIMARY KEY,
+    bal_due DECIMAL(10, 2) -- Balance due with two decimal places
+);
+
+INSERT INTO client_master (client_id, bal_due) VALUES (1, 500.00);
+INSERT INTO client_master (client_id, bal_due) VALUES (2, -100.00); -- Violates business rule
+INSERT INTO client_master (client_id, bal_due) VALUES (3, 0.00);
+INSERT INTO client_master (client_id, bal_due) VALUES (4, 300.00);
+INSERT INTO client_master (client_id, bal_due) VALUES (5, -50.00); -- Violates business rule
+
+
+DELIMITER $$
+
+CREATE PROCEDURE Check_Client_Balance()
+BEGIN
+    DECLARE v_client_id INT;
+    DECLARE v_bal_due DECIMAL(10, 2);
+    DECLARE done INT DEFAULT 0;
+    DECLARE cur CURSOR FOR SELECT client_id, bal_due FROM client_master;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+
+    -- Define a user-defined exception for negative balance due
+    DECLARE ex_negative_balance CONDITION FOR SQLSTATE '45000';
+    DECLARE CONTINUE HANDLER FOR ex_negative_balance
+        SELECT CONCAT('Error: Negative balance due detected for Client ID: ', v_client_id) AS Message;
+
+    -- Open the cursor to fetch client records
+    OPEN cur;
+
+    -- Loop through each client record
+    read_loop: LOOP
+        FETCH cur INTO v_client_id, v_bal_due;
+
+        -- Exit the loop if no more data
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+
+        -- Check if balance due is less than 0 (business rule violation)
+        IF v_bal_due < 0 THEN
+            -- Raise the user-defined exception
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Negative balance detected';
+        ELSE
+            -- Display message for clients with a valid balance due
+            SELECT CONCAT('Client ID: ', v_client_id, ' has a valid balance due of ', v_bal_due) AS Message;
+        END IF;
+
+    END LOOP;
+
+    -- Close the cursor after the loop ends
+    CLOSE cur;
+END$$
+
+DELIMITER ;
+
+
+-- To execute the procedure:
+CALL Check_Client_Balance();
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+b) Write an SQL code block
+Borrow(Roll_no, Name, DateofIssue, NameofBook, Status)
+Fine(Roll_no,Date,Amt)
+Accept roll_no & name of book from user. Check the number of days (from date of issue), if
+days are between 15 to 30 then fine amount will be Rs 5per day. If no. of days>30, per day fine
+will be Rs 50 per day & for days less than 30, Rs. 5 per day. After submitting the book, status
+will change from I to R. If condition of fine is true, then details will be stored into fine table.
+Also handles the exception by named exception handler or user define exception handler.
+
+
+-- Create Borrow table
+CREATE TABLE Borrow (
+    Roll_no INT,
+    Name VARCHAR(50),
+    DateofIssue DATE,
+    NameofBook VARCHAR(100),
+    Status CHAR(1) -- 'I' for Issued, 'R' for Returned
+);
+
+-- Create Fine table
+CREATE TABLE Fine (
+    Roll_no INT,
+    Date DATE,
+    Amt DECIMAL(10, 2)
+);
+
+
+
+-- Insert sample data into Borrow table
+INSERT INTO Borrow (Roll_no, Name, DateofIssue, NameofBook, Status) VALUES (101, 'Alice', '2024-10-01', 'Database Systems', 'I');
+INSERT INTO Borrow (Roll_no, Name, DateofIssue, NameofBook, Status) VALUES (102, 'Bob', '2024-10-10', 'Data Structures', 'I');
+
+
+
+
+DELIMITER //
+
+CREATE PROCEDURE Return_Book(
+    IN p_roll_no INT,
+    IN p_name_of_book VARCHAR(100)
+)
+BEGIN
+    DECLARE v_date_of_issue DATE;
+    DECLARE v_status CHAR(1);
+    DECLARE v_days_late INT;
+    DECLARE v_fine_amt DECIMAL(10, 2) DEFAULT 0;
+
+    -- Error handling for book not found or already returned
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SELECT 'An error occurred. Transaction rolled back.' AS error_message;
+    END;
+
+    -- Retrieve the Date of Issue and Status for the given Roll No and Book
+    SELECT DateofIssue, Status INTO v_date_of_issue, v_status
+    FROM Borrow
+    WHERE Roll_no = p_roll_no AND NameofBook = p_name_of_book;
+
+    -- Check if the book is already returned
+    IF v_status = 'R' THEN
+        SELECT 'Error: The book has already been returned.' AS error_message;
+    ELSE
+        -- Calculate the number of days since Date of Issue
+        SET v_days_late = DATEDIFF(CURDATE(), v_date_of_issue);
+
+        -- Calculate fine based on the number of days late
+        IF v_days_late > 30 THEN
+            SET v_fine_amt = 50 * v_days_late;
+        ELSEIF v_days_late BETWEEN 15 AND 30 THEN
+            SET v_fine_amt = 5 * v_days_late;
+        END IF;
+
+        -- Update the status of the book to 'R' (Returned)
+        UPDATE Borrow
+        SET Status = 'R'
+        WHERE Roll_no = p_roll_no AND NameofBook = p_name_of_book;
+
+        -- Insert fine details into Fine table if a fine was calculated
+        IF v_fine_amt > 0 THEN
+            INSERT INTO Fine (Roll_no, Date, Amt)
+            VALUES (p_roll_no, CURDATE(), v_fine_amt);
+
+            SELECT CONCAT('Fine of Rs ', v_fine_amt, ' has been applied for ', v_days_late, ' days late.') AS success_message;
+        ELSE
+            SELECT 'No fine applied. Book returned on time.' AS success_message;
+        END IF;
+        
+        -- Commit the transaction
+        COMMIT;
+    END IF;
+END//
+
+DELIMITER ;
+
+.....................To call the function......................
+
+CALL Return_Book(101, 'Database Systems');
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Problem Statement 18 (Procedures / Functions)
+Consider following schema for Bank database.
+Account(Account_No, Cust_Name, Balance, NoOfYears)
+Earned_Interest(Account_No, Interest_Amt)
+1. Write a PL/SQL procedure for following requirement. Take as input Account_No and Interest Rate from User.
+Calculate the Interest_Amt as simple interest for the given Account_No and store it in Earned_Interest table.
+Display all the details of Earned_Interest Table.
+2. Write a PLSQL function to display all records from Account table having Balance greater than 50,000.
+
+
+-- Create Account table
+CREATE TABLE Account (
+    Account_No INT PRIMARY KEY,
+    Cust_Name VARCHAR(50),
+    Balance DECIMAL(15, 2),
+    NoOfYears INT
+);
+
+
+-- Create Earned_Interest table
+CREATE TABLE Earned_Interest (
+    Account_No INT,
+    Interest_Amt DECIMAL(15, 2),
+    CONSTRAINT fk_account FOREIGN KEY (Account_No) REFERENCES Account(Account_No)
+);
+
+
+INSERT INTO Account (Account_No, Cust_Name, Balance, NoOfYears) VALUES (101, 'Alice', 60000, 3);
+
+INSERT INTO Account (Account_No, Cust_Name, Balance, NoOfYears) VALUES (102, 'Bob', 45000, 2);
+
+INSERT INTO Account (Account_No, Cust_Name, Balance, NoOfYears) VALUES (103, 'Charlie', 80000, 4);
+
+INSERT INTO Account (Account_No, Cust_Name, Balance, NoOfYears) VALUES (104, 'David', 30000, 1);
+
+INSERT INTO Account (Account_No, Cust_Name, Balance, NoOfYears) VALUES (105, 'Eve', 75000, 5);
+
+1....
+
+DELIMITER //
+
+CREATE PROCEDURE Calculate_Interest (
+    IN p_account_no INT,
+    IN p_interest_rate DECIMAL(5, 2)
+)
+BEGIN
+    DECLARE v_balance DECIMAL(15, 2);
+    DECLARE v_no_of_years INT;
+    DECLARE v_interest_amt DECIMAL(15, 2);
+
+    -- Retrieve the balance and number of years for the given account number
+    SELECT Balance, NoOfYears INTO v_balance, v_no_of_years
+    FROM Account
+    WHERE Account_No = p_account_no;
+
+    -- Calculate simple interest
+    SET v_interest_amt = (v_balance * p_interest_rate * v_no_of_years) / 100;
+
+    -- Insert the interest amount into Earned_Interest table
+    INSERT INTO Earned_Interest (Account_No, Interest_Amt)
+    VALUES (p_account_no, v_interest_amt);
+
+    -- Display interest calculated (use SELECT for testing)
+    SELECT CONCAT('Interest calculated and stored for Account No: ', p_account_no) AS Message;
+END //
+
+DELIMITER ;
+
+
+2.....
+
+DELIMITER //
+
+CREATE PROCEDURE Get_High_Balance_Accounts()
+BEGIN
+    -- Display accounts with balance greater than 50,000
+    SELECT * FROM Account WHERE Balance > 50000;
+END //
+
+DELIMITER ;
+
+
+
+-- Test Calculate_Interest
+CALL Calculate_Interest(101, 5);  -- Example: 5% interest rate
+
+-- Test Get_High_Balance_Accounts
+CALL Get_High_Balance_Accounts();
+
+
+
+
+
+

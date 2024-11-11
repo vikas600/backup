@@ -1,0 +1,308 @@
+Problem Statement 13 (Map Reduce) 
+Create collection for Student{roll_no, name, class, dept, aggregate_marks}. 
+json
+{
+    "roll_no": 1,
+    "name": "Alice",
+    "class": "TE",
+    "dept": "Computer",
+    "aggregate_marks": 75
+},
+{
+    "roll_no": 2,
+    "name": "Bob",
+    "class": "TE",
+    "dept": "Electrical",
+    "aggregate_marks": 85
+},
+{
+    "roll_no": 3,
+    "name": "Charlie",
+    "class": "SE",
+    "dept": "Computer",
+    "aggregate_marks": 90
+},
+{
+    "roll_no": 4,
+    "name": "David",
+    "class": "SE",
+    "dept": "Electrical",
+    "aggregate_marks": 95
+},
+{
+    "roll_no": 5,
+    "name": "Eve",
+    "class": "BE",
+    "dept": "Computer",
+    "aggregate_marks": 88
+},
+{
+    "roll_no": 6,
+    "name": "Frank",
+    "class": "BE",
+    "dept": "Electrical",
+    "aggregate_marks": 92
+}
+
+Write Map Reduce Functions for following requirements.
+1.	Finding the total marks of students of “TE” class department-wise. 
+var mapTotalMarks = function() {
+    if (this.class === "TE") {
+        emit(this.dept, this.aggregate_marks);
+    }
+};
+var reduceTotalMarks = function(key, values) {
+    return Array.sum(values);
+};
+db.students.mapReduce(
+    mapTotalMarks,
+    reduceTotalMarks,
+    { out: "total_marks_TE_department_wise" }
+);
+
+2.	Finding the highest marks of students of “SE” class department-wise. 
+var mapHighestMarks = function() {
+    if (this.class === "SE") {
+        emit(this.dept, this.aggregate_marks);
+    }
+};
+var reduceHighestMarks = function(key, values) {
+    return Math.max.apply(null, values);
+};
+db.students.mapReduce(
+    mapHighestMarks,
+    reduceHighestMarks,
+    { out: "highest_marks_SE_department_wise" }
+);
+
+3.	Find Average marks of students of “BE” class department-wise.
+var mapAverageMarks = function() {
+    if (this.class === "BE") {
+        emit(this.dept, { sum: this.aggregate_marks, count: 1 });
+    }
+};
+var reduceAverageMarks = function(key, values) {
+    var result = { sum: 0, count: 0 };
+    values.forEach(function(value) {
+        result.sum += value.sum;
+        result.count += value.count;
+    });
+    return result;
+};
+var finalizeAverageMarks = function(key, reducedValue) {
+    if (reducedValue.count > 0) {
+        reducedValue.avg = reducedValue.sum / reducedValue.count;
+    }
+    return reducedValue.avg;
+};
+db.students.mapReduce(
+    mapAverageMarks,
+    reduceAverageMarks,
+    {
+        out: "average_marks_BE_department_wise",
+        finalize: finalizeAverageMarks
+    }
+);
+
+
+Problem Statement 14 (DML USING MYSQL) 
+
+Create following tables using a given schema and insert appropriate data into the same: Customer (CustID, Name, Cust_Address, Phone_no, Email_ID, Age)
+ Branch (Branch ID, Branch_Name, Address)
+ Account (Account_no, Branch ID, CustID, date_open, Account_type, Balance) 
+
+CREATE TABLE Customer (
+    CustID INT PRIMARY KEY,
+    Name VARCHAR(50),
+    Cust_Address VARCHAR(100),
+    Phone_no VARCHAR(15),
+    Email_ID VARCHAR(50),
+    Age INT
+);
+
+CREATE TABLE Branch (
+    Branch_ID INT PRIMARY KEY,
+    Branch_Name VARCHAR(50),
+    Address VARCHAR(100)
+);
+
+CREATE TABLE Account (
+    Account_no INT PRIMARY KEY,
+    Branch_ID INT,
+    CustID INT,
+    date_open DATE,
+    Account_type VARCHAR(20),
+    Balance DECIMAL(15, 2),
+    FOREIGN KEY (Branch_ID) REFERENCES Branch(Branch_ID),
+    FOREIGN KEY (CustID) REFERENCES Customer(CustID)
+);
+
+
+Insert values
+
+INSERT INTO Customer (CustID, Name, Cust_Address, Phone_no, Email_ID, Age) VALUES
+(1, 'Alice', '123 Main St, Pune', '1234567890', 'alice@example.com', 30),
+(2, 'Bob', '456 Park Ave, Mumbai', '0987654321', 'bob@example.com', 40),
+(3, 'Catherine', '789 Sunset Blvd, Pune', '1122334455', 'cat@example.com', 25);
+
+INSERT INTO Branch (Branch_ID, Branch_Name, Address) VALUES
+(1, 'Central', '123 Main St'),
+(2, 'North', '456 Park Ave');
+
+INSERT INTO Account (Account_no, Branch_ID, CustID, date_open, Account_type, Balance) VALUES
+(101, 1, 1, '2020-01-01', 'Saving Account', 60000),
+(102, 2, 2, '2021-02-15', 'Current Account', 40000),
+(103, 1, 3, '2022-03-20', 'Saving Account', 70000);
+
+1.	Modify the size of column “Email_Address” to 20 in Customer table.
+  
+ALTER TABLE Customer MODIFY Email_ID VARCHAR(20);
+
+2.	Change the column “Email_Address” to Not Null in Customer table.
+
+ALTER TABLE Customer MODIFY Email_ID VARCHAR(20) NOT NULL;
+
+3.	Display the total customers with the balance >50, 000 Rs.  
+
+SELECT COUNT(*) AS Total_Customers
+FROM Account
+WHERE Balance > 50000;
+
+4.	Display average balance for account type=”Saving Account”.
+
+SELECT AVG(Balance) AS Average_Balance
+FROM Account
+WHERE Account_type = 'Saving Account';
+
+5.	Display the customer details that lives in Pune or name starts with ’A’.
+
+SELECT *
+FROM Customer
+WHERE Cust_Address LIKE '%Pune%' OR Name LIKE 'A%';
+
+6.	Create a table Saving_Account with (Account_no, Branch ID, CustID, date_open, Balance) using Account Table.
+
+CREATE TABLE Saving_Account AS
+SELECT Account_no, Branch_ID, CustID, date_open, Balance
+FROM Account
+WHERE Account_type = 'Saving Account';
+
+7.	Display the customer details Age wise with balance>=20,000Rs
+
+SELECT C.*
+FROM Customer C
+JOIN Account A ON C.CustID = A.CustID
+WHERE A.Balance >= 20000
+ORDER BY C.Age;
+
+Problem Statement 15 (Cursors)
+
+ Consider the following schema for Products table.
+ Products(Product_id, Product_Name, Product_Type, Price) 
+
+CREATE TABLE Products (
+    Product_id INT PRIMARY KEY,
+    Product_Name VARCHAR(50),
+    Product_Type VARCHAR(50),
+    Price DECIMAL(10, 2)
+);
+INSERT INTO Products (Product_id, Product_Name, Product_Type, Price) VALUES
+(1, 'T-Shirt', 'Apparel', 1500),
+(2, 'Jeans', 'Apparel', 3000),
+(3, 'Laptop', 'Electronics', 60000),
+(4, 'Watch', 'Accessories', 8000),
+(5, 'Jacket', 'Apparel', 4000);
+
+1.	Write a parameterized cursor to display all products in the given price range of price and type ‘Apparel’. Hint: Take the user input for minimum and maximum price for price range.
+DELIMITER //
+
+CREATE PROCEDURE GetProductsInPriceRange(min_price DECIMAL(10, 2), max_price DECIMAL(10, 2))
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE prod_id INT;
+    DECLARE prod_name VARCHAR(50);
+    DECLARE prod_type VARCHAR(50);
+    DECLARE prod_price DECIMAL(10, 2);
+    
+    -- Define the cursor with parameters
+    DECLARE product_cursor CURSOR FOR
+        SELECT Product_id, Product_Name, Product_Type, Price
+        FROM Products
+        WHERE Product_Type = 'Apparel' AND Price BETWEEN min_price AND max_price;
+
+    -- Declare NOT FOUND handler
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    -- Open the cursor
+    OPEN product_cursor;
+
+    -- Fetch each row and display
+    product_loop: LOOP
+        FETCH product_cursor INTO prod_id, prod_name, prod_type, prod_price;
+        IF done THEN
+            LEAVE product_loop;
+        END IF;
+        -- Display each record (simulating output)
+        SELECT prod_id AS Product_ID, prod_name AS Product_Name, prod_type AS Product_Type, prod_price AS Price;
+    END LOOP;
+
+    -- Close the cursor
+    CLOSE product_cursor;
+END//
+DELIMITER ;
+
+CALL GetProductsInPriceRange(1000, 4000);
+
+ 2. Write an explicit cursor to display information of all products with Price greater than 5000.
+DELIMITER //
+CREATE PROCEDURE DisplayProductsAbove5000()
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE prod_id INT;
+    DECLARE prod_name VARCHAR(50);
+    DECLARE prod_type VARCHAR(50);
+    DECLARE prod_price DECIMAL(10, 2);
+
+    -- Define the cursor
+    DECLARE product_cursor CURSOR FOR
+        SELECT Product_id, Product_Name, Product_Type, Price
+        FROM Products
+        WHERE Price > 5000;
+
+    -- Declare NOT FOUND handler
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    -- Open the cursor
+    OPEN product_cursor;
+
+    -- Fetch each row and display
+    product_loop: LOOP
+        FETCH product_cursor INTO prod_id, prod_name, prod_type, prod_price;
+        IF done THEN
+            LEAVE product_loop;
+        END IF;
+        -- Display each record (simulating output)
+        SELECT prod_id AS Product_ID, prod_name AS Product_Name, prod_type AS Product_Type, prod_price AS Price;
+    END LOOP;
+
+    -- Close the cursor
+    CLOSE product_cursor;
+END//
+DELIMITER ;
+
+CALL DisplayProductsAbove5000();
+
+3.Write an implicit cursor to display the number of records affected by the update operation incrementing Price of all products by 1000.
+DELIMITER //
+CREATE PROCEDURE UpdateProductPrices()
+BEGIN
+    -- Update statement
+    UPDATE Products
+    SET Price = Price + 1000;
+
+    -- Display the number of affected rows
+    SELECT ROW_COUNT() AS Records_Affected;
+END//
+
+DELIMITER ;
+       CALL UpdateProductPrices();

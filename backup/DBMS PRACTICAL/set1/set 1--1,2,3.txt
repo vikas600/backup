@@ -1,0 +1,345 @@
+-- 1. creating the database and tables
+
+create database company;
+use company;
+
+create table dept (
+    deptno int primary key,
+    deptname varchar(20),
+    location varchar(30)
+);
+
+create table emp (
+    eno int primary key,
+    ename varchar(50),
+    job varchar(20),
+    hiredate date,
+    salary int,
+    commission int,
+    deptno int,
+    foreign key (deptno) references dept(deptno)
+);
+
+-- 2. inserting data into tables
+
+insert into dept values 
+(10, 'HR', 'Mumbai'),
+(20, 'Finance', 'Pune'),
+(30, 'dev', 'Nagpur'),
+(40, 'sales', 'Nashik');
+
+insert into emp values 
+(1, 'Sachin', 'Manager', '1980-06-15', 5000, 500, 10),
+(2, 'Ishwari', 'Analyst', '1981-08-20', 4000, 200, 20),
+(3, 'Madhura', 'Salesman', '1982-12-01', 2500, 300, 40),
+(4, 'Ashwini', 'Developer', '1980-05-21', 3000, null, 30),
+(5, 'Vikas', 'Salesman', '1983-10-12', 2800, 400, 40),
+(6, 'Shubhangi', 'Analyst', '1981-09-10', 3500, null, 20),
+(7, 'Rohit', 'Clerk', '1982-11-30', 1800, null, 10),
+(8, 'Amol', 'Developer', '1980-07-10', 3700, null, 30),
+(9, 'Pratik', 'Manager', '1981-02-11', 5200, 600, 10),
+(10, 'Rupali', 'Salesman', '1983-05-17', 2900, 250, 40);
+
+-- 3. example queries without error logs
+
+-- maximum salary for salesman
+select max(salary) 
+from emp 
+where job = 'Salesman';
+
+-- employees whose names start with 'I'
+select ename 
+from emp 
+where ename like 'I%';
+
+-- employees hired before a specific date
+select * 
+from emp 
+where hiredate < '1981-09-30';
+
+-- all employees ordered by salary descending
+select * 
+from emp 
+order by salary desc;
+
+-- count and average salary in department 20 (finance)
+select count(*), avg(salary) 
+from emp 
+where deptno = 20;
+
+-- employees hired in department 10 with aggregated salary data
+select hiredate, avg(salary) as avgsal, min(salary) as minsal 
+from emp 
+where deptno = 10 
+group by hiredate;
+
+-- employees with department details using join
+select e.ename, d.deptname 
+from emp e 
+join dept d on e.deptno = d.deptno;
+
+-- employees in department 'dev'
+select * 
+from emp e 
+join dept d on e.deptno = d.deptno 
+where d.deptname = 'dev';
+
+-- salary update for employees in department 10 (hr)
+update emp 
+set salary = salary * 1.05 
+where deptno = 10;
+
+-------------------------------------
+-- step 1: create the database
+
+create database emp1;
+
+use emp1;
+
+-- step 2: create the tables
+
+-- 1. employee table
+create table emp (
+    ename varchar(50) primary key,
+    street varchar(100),
+    city varchar(50)
+);
+
+-- 2. company table
+create table comp (
+    compname varchar(50) primary key,
+    city varchar(50)
+);
+
+-- 3. works table
+-- this table contains the salary and employee-company relationships
+create table works (
+    ename varchar(50),
+    compname varchar(50),
+    salary int,
+    primary key(ename, compname),
+    foreign key(ename) references emp(ename),
+    foreign key(compname) references comp(compname)
+);
+
+-- 4. manages table
+-- this table maps employees to their managers
+create table manages (
+    ename varchar(50),
+    manager_name varchar(50),
+    primary key(ename, manager_name),
+    foreign key(ename) references emp(ename),
+    foreign key(manager_name) references emp(ename)
+);
+
+-- step 3: insert data into the tables
+
+-- 1. insert data into the `emp` (employee) table
+insert into emp (ename, street, city) values
+('Rahul', 'MG Road', 'Pune'),
+('Amit', 'Shivaji Nagar', 'Mumbai'),
+('Snehal', 'Kalyani Nagar', 'Pune'),
+('Nikita', 'Fergusson College Road', 'Pune'),
+('Suresh', 'Andheri West', 'Mumbai');
+
+-- 2. insert data into the `comp` (company) table
+insert into comp (compname, city) values
+('First Bank Corporation', 'Mumbai'),
+('Tech Solutions', 'Pune'),
+('Maharashtra Pvt Ltd', 'Nagpur');
+
+-- 3. insert data into the `works` (works) table
+insert into works (ename, compname, salary) values
+('Rahul', 'First Bank Corporation', 12000),
+('Amit', 'Tech Solutions', 15000),
+('Snehal', 'First Bank Corporation', 18000),
+('Nikita', 'Maharashtra Pvt Ltd', 9500),
+('Suresh', 'Tech Solutions', 11000);
+
+-- 4. insert data into the `manages` (manages) table
+insert into manages (ename, manager_name) values
+('Rahul', 'Amit'),
+('Snehal', 'Amit'),
+('Nikita', 'Rahul'),
+('Suresh', 'Nikita');
+
+-- step 4: run the queries
+
+-- 1. find the names of all employees who work for 'First Bank Corporation'
+select ename
+from works
+where compname = 'First Bank Corporation';
+
+-- 2. find all employees who do not work for 'First Bank Corporation'
+select ename
+from works
+where compname != 'First Bank Corporation';
+
+-- 3. find the company that has the most employees
+select compname
+from works
+group by compname
+order by count(ename) desc
+limit 1;
+
+-- 4. find all companies located in every city where Small Bank Corporation is located
+select c.compname
+from comp c
+where not exists (
+    select 1
+    from comp c2
+    where c2.compname = 'Small Bank Corporation'
+    and c2.city not in (select city from comp where compname = c.compname)
+);
+
+-- 5. find details of employees having a salary greater than 10,000
+select e.ename, e.street, e.city, w.compname, w.salary
+from emp e
+join works w on e.ename = w.ename
+where w.salary > 10000;
+
+-- 6. update salary of all employees who work for 'First Bank Corporation' by 10%
+update works
+set salary = salary * 1.10
+where compname = 'First Bank Corporation';
+
+-- 7. find employee and their managers
+select w.ename, m.manager_name
+from manages m
+join works w on m.ename = w.ename;
+
+-- 8. find the names, street, and cities of employees who work for 'First Bank Corporation' and earn more than 10,000
+select e.ename, e.street, e.city
+from emp e
+join works w on e.ename = w.ename
+where w.compname = 'First Bank Corporation'
+  and w.salary > 10000;
+
+-- 9. find companies where employees earn a higher salary, on average, than the average salary at 'First Bank Corporation'
+select compname
+from works
+group by compname
+having avg(salary) > (
+    select avg(salary)
+    from works
+    where compname = 'First Bank Corporation'
+);
+
+
+-------------------------------------
+
+-- 1. create the database and use it:
+create database hotel;
+use hotel;
+
+-- 2. create tables:
+-- hotel table:
+create table hotel (
+    hotelno int primary key,
+    name varchar(30),
+    city varchar(20)
+);
+
+-- room table:
+create table room (
+    roomno int,
+    hotelno int,
+    type varchar(50),
+    price int,
+    primary key(hotelno, roomno),
+    foreign key(hotelno) references hotel(hotelno)
+);
+
+-- guest table:
+create table guest (
+    guestno int primary key,
+    gname varchar(50),
+    gadder varchar(100)
+);
+
+-- booking table:
+create table booking (
+    hotelno int,
+    guestno int,
+    datefrom date,
+    dateto date,
+    roomno int,
+    primary key(hotelno, guestno, datefrom),
+    foreign key(hotelno) references hotel(hotelno),
+    foreign key(guestno) references guest(guestno),
+    foreign key(hotelno, roomno) references room(hotelno, roomno)
+);
+
+-- 3. insert data:
+-- insert into the hotel table:
+insert into hotel (hotelno, name, city) values
+(1, 'Grosvenor Hotel', 'London'),
+(2, 'Rajdhani Hotel', 'Pune'),
+(3, 'Blue Ridge Hotel', 'Mumbai');
+
+-- insert into the room table:
+insert into room (roomno, hotelno, type, price) values
+(101, 1, 'Single', 100.00),
+(102, 1, 'Double', 150.00),
+(201, 2, 'Single', 90.00),
+(202, 2, 'Double', 120.00),
+(301, 3, 'Single', 110.00),
+(302, 3, 'Double', 140.00);
+
+-- insert into the guest table:
+insert into guest values
+(1, 'rahul', 'pune'),
+(2, 'amit', 'mumbai'),
+(3, 'snehal', 'pune');
+
+-- insert into the booking table:
+insert into booking (hotelno, guestno, datefrom, dateto, roomno) values
+(1, 1, '2024-11-01', '2024-11-05', 101),
+(1, 2, '2024-11-03', '2024-11-07', 102),
+(2, 3, '2024-11-02', '2024-11-04', 201);
+
+-- 4. select queries:
+-- count the number of hotels:
+select count(*) as numberofhotels from hotel;
+
+-- join hotel and room to show room types and prices for "Grosvenor Hotel":
+select h.name, r.type, r.price
+from hotel h
+join room r on h.hotelno = r.hotelno
+where h.name = 'Grosvenor Hotel';
+
+-- count room types per hotel:
+select h.name, count(r.type) as typesofroom
+from hotel h
+join room r on h.hotelno = r.hotelno
+group by h.name;
+
+-- increase the price of all rooms by 5%:
+update room
+set price = price * 1.05;
+
+-- select rooms in hotels located in London:
+select * from room
+where hotelno in (select hotelno from hotel where city = 'London');
+
+-- select guests who booked at the "Grosvenor Hotel":
+select g.guestno, g.gname, g.gadder
+from guest g
+join booking b on g.guestno = b.guestno
+join hotel h on b.hotelno = h.hotelno
+where h.name = 'Grosvenor Hotel';
+
+-- count the number of rooms booked in London:
+select count(b.roomno)
+from booking b
+join hotel h on b.hotelno = h.hotelno
+where h.city = 'London';
+
+-- 5. create a view:
+create view hotelroom as
+select h.hotelno, h.name as hotelname, r.roomno, r.type, r.price
+from hotel h
+join room r on h.hotelno = r.hotelno;
+
+-- view data from hotelroom:
+select * from hotelroom;

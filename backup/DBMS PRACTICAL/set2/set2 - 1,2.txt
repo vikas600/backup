@@ -1,0 +1,324 @@
+Prl 1:
+-------------
+>db.createCollection("Student");
+{ ok: 1 }
+>db.Student.insertMany([
+    { Roll_No: "A01", Name: "Alice", Class: "SE", Marks: 85, Address: "Address1", Enrolled_Courses: ["DBMS", "Math"] },
+    { Roll_No: "A02", Name: "Bob", Class: "TE", Marks: 60, Address: "Address2", Enrolled_Courses: ["TOC", "DBMS"] },
+    { Roll_No: "A03", Name: "Charlie", Class: "BE", Marks: 45, Address: "Address3", Enrolled_Courses: ["OS", "Math"] },
+    { Roll_No: "A04", Name: "David", Class: "TE", Marks: 75, Address: "Address4", Enrolled_Courses: ["DBMS", "TOC"] },
+    { Roll_No: "A05", Name: "Eve", Class: "SE", Marks: 55, Address: "Address5", Enrolled_Courses: ["AI", "DBMS"] },
+    { Roll_No: "A06", Name: "Frank", Class: "BE", Marks: 90, Address: "Address6", Enrolled_Courses: ["Math", "TOC"] },
+    { Roll_No: "A07", Name: "Grace", Class: "TE", Marks: 30, Address: "Address7", Enrolled_Courses: ["DBMS", "AI"] },
+    { Roll_No: "A08", Name: "Hank", Class: "SE", Marks: 20, Address: "Address8", Enrolled_Courses: ["Math", "TOC"] },
+    { Roll_No: "A09", Name: "Ivy", Class: "BE", Marks: 65, Address: "Address9", Enrolled_Courses: ["DBMS", "OS"] },
+    { Roll_No: "A10", Name: "Jack", Class: "TE", Marks: 95, Address: "Address10", Enrolled_Courses: ["TOC", "AI"] }
+]);
+
+>db.Student.find(
+    { Enrolled_Courses: { $in: ["DBMS", "TOC"] } },
+    { Name: 1, _id: 0 }
+);
+>{
+  Name: 'Alice'
+}
+{
+  Name: 'Bob'
+}
+{
+  Name: 'David'
+}
+{
+  Name: 'Eve'
+}
+{
+  Name: 'Frank'
+}
+{
+  Name: 'Grace'
+}
+{
+  Name: 'Hank'
+}
+{
+  Name: 'Ivy'
+}
+{
+  Name: 'Jack New'
+}
+{
+  Name: 'Alice'
+}
+{
+  Name: 'Bob'
+}
+{
+  Name: 'David'
+}
+{
+  Name: 'Eve'
+}
+{
+  Name: 'Frank'
+}
+{
+  Name: 'Alice'
+}
+{
+  Name: 'Bob'
+}
+{
+  Name: 'David'
+}
+{
+  Name: 'Eve'
+}
+{
+  Name: 'Frank'
+}
+{
+  Name: 'Grace'
+}
+Type "it" for more
+>db.Student.find(
+    { $or: [{ Marks: { $gt: 50 } }, { Class: "TE" }] },
+    { Roll_No: 1, Class: 1, _id: 0 }
+);
+>{
+  Roll_No: 'A01',
+  Class: 'SE'
+}
+{
+  Roll_No: 'A02',
+  Class: 'TE'
+}
+{
+  Roll_No: 'A04',
+  Class: 'TE'
+}
+{
+  Roll_No: 'A05',
+  Class: 'SE'
+}
+{
+  Roll_No: 'A06',
+  Class: 'BE'
+}
+{
+  Roll_No: 'A07',
+  Class: 'TE'
+}
+{
+  Roll_No: 'A09',
+  Class: 'BE'
+}
+{
+  Roll_No: 'A10',
+  Class: 'BE'
+}
+{
+  Roll_No: 'A01',
+  Class: 'SE'
+}
+{
+  Roll_No: 'A02',
+  Class: 'TE'
+}
+{
+  Roll_No: 'A04',
+  Class: 'TE'
+}
+{
+  Roll_No: 'A05',
+  Class: 'SE'
+}
+{
+  Roll_No: 'A06',
+  Class: 'BE'
+}
+{
+  Roll_No: 'A01',
+  Class: 'SE'
+}
+{
+  Roll_No: 'A02',
+  Class: 'TE'
+}
+{
+  Roll_No: 'A04',
+  Class: 'TE'
+}
+{
+  Roll_No: 'A05',
+  Class: 'SE'
+}
+{
+  Roll_No: 'A06',
+  Class: 'BE'
+}
+{
+  Roll_No: 'A07',
+  Class: 'TE'
+}
+{
+  Roll_No: 'A09',
+  Class: 'BE'
+}
+Type "it" for more
+
+>db.Student.updateOne(
+    { Roll_No: "A10" },
+    {
+        $set: {
+            Name: "Jack New",
+            Class: "BE",
+            Marks: 88,
+            Address: "New Address",
+            Enrolled_Courses: ["DBMS", "AI", "Math"]
+        }
+    }
+);
+>{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 0,
+  upsertedCount: 0
+}
+
+>db.Student.find({}, { Name: 1, Marks: 1, _id: 0 })
+    .sort({ Marks: -1 })
+    .skip(2)
+    .limit(2);
+{
+  Name: 'Frank',
+  Marks: 90
+}
+{
+  Name: 'Frank',
+  Marks: 90
+}
+>db.Student.deleteMany( { Marks: { $lt: 20 } } );
+
+>{
+  acknowledged: true,
+  deletedCount: 0
+}
+
+>db.Student.deleteOne({});
+
+>{
+  acknowledged: true,
+  deletedCount: 1
+}
+------------------------------------------------------------------------------------------------
+
+Prl 2 :
+--------
+ -> use Bank;
+Database changed
+mysql> CREATE TABLE Customer (
+         CustID INT PRIMARY KEY,
+         Name VARCHAR(50),
+         Cust_Address VARCHAR(100),
+         Phone_no VARCHAR(15),
+         Email_ID VARCHAR(50),
+         Age INT );
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> CREATE TABLE Branch (
+         BranchID INT PRIMARY KEY,
+         Branch_Name VARCHAR(50),
+         Address VARCHAR(100));
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> CREATE TABLE Account (
+        Account_no INT PRIMARY KEY, BranchID INT,
+        CustID INT, open_date DATE, Account_type VARCHAR(20),
+        Balance DECIMAL(15,2), FOREIGN KEY (BranchID) REFERENCES Branch(BranchID),
+        FOREIGN KEY (CustID) REFERENCES Customer(CustID) );
+Query OK, 0 rows affected (0.02 sec)
+
+mysql> INSERT INTO Customer (CustID, Name, Cust_Address, Phone_no, Email_ID, Age) VALUES
+    (101, 'Alice Smith', 'New York', '1234567890', 'alice@example.com', 30),
+     (102, 'Bob Johnson', 'Los Angeles', '0987654321', 'bob@example.com', 45),
+     (103, 'Carol White', 'Chicago', '1122334455', 'carol@example.com', 25),
+    (104, 'David Brown', 'Houston', '2233445566', 'david@example.com', 40),
+     (105, 'Emma Davis', 'Phoenix', '3344556677', 'emma@example.com', 35);
+
+Query OK, 5 rows affected (0.01 sec)
+Records: 5  Duplicates: 0  Warnings: 0
+
+mysql> INSERT INTO Branch (BranchID, Branch_Name, Address) VALUES
+    (1, 'Downtown Branch', '123 Main St, New York'),
+     (2, 'Uptown Branch', '456 North Ave, Los Angeles'),
+     (3, 'Eastside Branch', '789 South St, Chicago'),
+    (4, 'Westside Branch', '101 Central Ave, Houston'),
+    (5, 'Midtown Branch', '202 East Rd, Phoenix');
+Query OK, 5 rows affected (0.01 sec)
+Records: 5  Duplicates: 0  Warnings: 0
+
+mysql> INSERT INTO Account (Account_no, BranchID, CustID, open_date, Account_type, Balance) VALUES
+    (1001, 1, 101, '2018-08-16', 'Saving', 1500.00),
+    (1002, 2, 102, '2019-05-10', 'Checking', 2000.00),
+    (1003, 3, 103, '2018-02-16', 'Loan', 5000.00),
+    (1004, 4, 104, '2018-08-16', 'Saving', 2500.00),
+    (1005, 5, 105, '2020-01-20', 'Loan', 3000.00);
+Query OK, 5 rows affected (0.00 sec)
+Records: 5  Duplicates: 0  Warnings: 0
+
+mysql> CREATE VIEW SavingAccount AS
+     SELECT Customer.CustID, Customer.Name, Customer.Cust_Address, Customer.Phone_no, Customer.Email_ID, Customer.Age, Account.open_date
+    FROM Customer
+    JOIN Account ON Customer.CustID = Account.CustID
+    WHERE Account.Account_type = 'Saving' AND Account.open_date = '2018-08-16';
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> UPDATE Customer  SET Cust_Address = 'Pune' WHERE CustID = 103;
+Query OK, 1 row affected (0.01 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+mysql> CREATE VIEW LoanAccount AS
+    SELECT Customer.CustID, Customer.Name, Customer.Cust_Address, Customer.Phone_no, Customer.Email_ID, Customer.Age, Account.open_date FROM Customer
+JOIN Account ON Customer.CustID = Account.CustID WHERE Account.Account_type = 'Loan' AND Account.open_date = '2018-02-16';
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> CREATE INDEX idx_CustID ON Customer (CustID);
+Query OK, 0 rows affected (0.05 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+mysql> CREATE INDEX idx_BranchID ON Branch (BranchID);
+Query OK, 0 rows affected (0.03 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+mysql> ALTER TABLE Account DROP FOREIGN KEY account_ibfk_2;
+Query OK, 0 rows affected (0.01 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+mysql> ALTER TABLE Customer MODIFY COLUMN CustID INT AUTO_INCREMENT;
+Query OK, 5 rows affected (0.04 sec)
+Records: 5  Duplicates: 0  Warnings: 0
+
+mysql> ALTER TABLE Account
+       ADD CONSTRAINT account_ibfk_2
+       FOREIGN KEY (CustID) REFERENCES Customer(CustID);
+Query OK, 5 rows affected (0.04 sec)
+Records: 5  Duplicates: 0  Warnings: 0
+
+mysql> CREATE VIEW Cust_info AS
+       SELECT * FROM Branch;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> select * from Customer;
++--------+-------------+--------------+------------+-------------------+------+
+| CustID | Name        | Cust_Address | Phone_no   | Email_ID          | Age  |
++--------+-------------+--------------+------------+-------------------+------+
+|    101 | Alice Smith | New York     | 1234567890 | alice@example.com |   30 |
+|    102 | Bob Johnson | Los Angeles  | 0987654321 | bob@example.com   |   45 |
+|    103 | Carol White | Pune         | 1122334455 | carol@example.com |   25 |
+|    104 | David Brown | Houston      | 2233445566 | david@example.com |   40 |
+|    105 | Emma Davis  | Phoenix      | 3344556677 | emma@example.com  |   35 |
++--------+-------------+--------------+------------+-------------------+------+
+
+---------------------------------------------------------------------------------------------------------
+
